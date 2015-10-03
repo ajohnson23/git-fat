@@ -644,6 +644,9 @@ class GitFat(object):
         The smudge filter runs whenever a file is being checked out into the working copy of the tree
         instream is sys.stdin and outstream is sys.stdout when it is called by git
         '''
+        # Pull all the files right now. SUPER hacky, just to demonstrate.
+        self.pullfiles()
+
         blockiter, fatfile = self._decode(instream)
         if fatfile:
             block = next(blockiter)  # read the first block
@@ -911,6 +914,17 @@ class GitFat(object):
 
         # File exists but is not a fatfile, don't add it
         return False
+
+    def pullfiles(self):
+        """ Get orphans, call backend pull """
+        kwargs = dict()
+        cached_objs = self._cached_objects()
+        self.backend = _parse_config(backend='http')
+
+        # default pull any object referenced but not stored
+        files = self._referenced_objects(**kwargs) - cached_objs
+        if not self.backend.pull_files(files):
+            sys.exit(1)
 
     def pull(self, patterns=None, **kwargs):
         """ Get orphans, call backend pull """
